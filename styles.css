@@ -1,0 +1,149 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #15181d;
+  color: #ece8df;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+#app { width: min(1040px, calc(100% - 32px)); margin: 40px auto; }
+h1 { margin: 0 0 6px; font-size: clamp(22px, 4vw, 32px); }
+.description { margin: 0 0 4px; color: #aaa69e; }
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: end;
+  max-width: 560px;
+  padding: 14px;
+  border: 1px solid #343941;
+  border-radius: 10px;
+  background: #20242a;
+}
+.catalog-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 420px; }
+
+/* Seed −/+ stepper */
+.stepper { display: flex; gap: 5px; align-items: stretch; }
+.stepper input { flex: 1; min-width: 0; text-align: center; }
+.step-btn {
+  flex: 0 0 auto;
+  min-width: 34px;
+  min-height: 38px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+label { display: grid; gap: 5px; color: #bbb7ae; font-size: 12px; }
+.label-row { display: flex; justify-content: space-between; gap: 12px; }
+output { color: #ece8df; font-variant-numeric: tabular-nums; }
+input, select, button {
+  min-height: 40px;
+  border: 1px solid #444a54;
+  border-radius: 6px;
+  font: inherit;
+}
+input, select { width: 100%; padding: 7px 9px; background: #15181d; color: inherit; }
+input[type="range"] { padding: 0; accent-color: #e0a844; cursor: pointer; }
+button { padding: 7px 16px; background: #e0a844; color: #17191d; font-weight: 700; cursor: pointer; }
+button:hover:not(:disabled) { filter: brightness(1.08); }
+button:disabled { cursor: not-allowed; filter: grayscale(1); opacity: .5; }
+
+/* ---- Catalog ---- */
+.catalog-header { margin-bottom: 20px; }
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  flex-wrap: wrap;
+}
+.pager-info { color: #bbb7ae; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.page-input { width: 76px; min-height: 34px; text-align: center; }
+.pager-range { color: #aaa69e; font-size: 12px; font-variant-numeric: tabular-nums; }
+.pager button { min-height: 36px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+.cell {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  min-height: 0;
+  border: 1px solid #343941;
+  border-radius: 8px;
+  background: #20242a;
+  cursor: pointer;
+  transition: border-color .12s, transform .12s;
+}
+.cell:hover:not(:disabled) { border-color: #e0a844; transform: translateY(-2px); filter: none; }
+.cell canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: #101216;
+  image-rendering: auto;
+}
+.cell-caption { color: #aaa69e; font-size: 11px; font-variant-numeric: tabular-nums; }
+.cell-error canvas { outline: 1px solid #a4443a; }
+@media (max-width: 900px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 560px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* ---- Editor ---- */
+.edit-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.back-button {
+  min-height: 36px;
+  background: transparent;
+  color: #d6d2c9;
+  border-color: #444a54;
+  font-weight: 400;
+}
+.back-button:hover { border-color: #e0a844; color: #e0a844; }
+.status { min-height: 24px; margin: 12px 0 8px; color: #aaa69e; font-size: 13px; }
+.result {
+  width: min(100%, 512px);
+  margin: 0 auto;
+  padding: 8px;
+  border: 1px solid #343941;
+  border-radius: 8px;
+  background: #20242a;
+}
+.result canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: #101216;
+  image-rendering: auto;
+}
+.result canvas.hidden { display: none; }
+figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  color: #aaa69e;
+  font-size: 12px;
+}
+.preview-actions, .mode-switch { display: flex; align-items: center; gap: 6px; }
+figcaption button {
+  min-height: 28px;
+  padding: 3px 9px;
+  border-color: #444a54;
+  background: transparent;
+  color: #d6d2c9;
+  font-size: 12px;
+  font-weight: 400;
+}
+figcaption button.active { border-color: #e0a844; color: #e0a844; }
+
+@media (max-width: 560px) {
+  .controls { grid-template-columns: repeat(2, 1fr); }
+  .catalog-controls { grid-template-columns: repeat(2, 1fr); }
+}
