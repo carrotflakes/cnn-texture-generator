@@ -4,6 +4,13 @@ import { generateTexture, DEFAULT_CONFIG, type TextureConfig } from "./types";
 import { navigate, replace } from "./router";
 import { seedField, wireSteppers } from "./stepper";
 import { isFavorite, subscribe as subscribeFavorites, toggleFavorite } from "./favorites";
+import {
+  formatInject,
+  injectFromSlider,
+  INJECT_SLIDER_MAX,
+  INJECT_SLIDER_MIN,
+  sliderFromInject,
+} from "./inject";
 
 const OUTPUT_SIZES = [64, 128, 256, 512, 1024];
 
@@ -53,7 +60,14 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
         </label>
         <label>
           <span class="label-row"><span>inject</span><output id="injVal"></output></span>
-          <input id="inj" type="range" min="0" max="2" step="0.1" value="${config.inject}">
+          <input
+            id="inj"
+            type="range"
+            min="${INJECT_SLIDER_MIN}"
+            max="${INJECT_SLIDER_MAX}"
+            step="1"
+            value="${sliderFromInject(config.inject)}"
+          >
         </label>
         ${seedField("net", "network seed", config.networkSeed)}
         ${seedField("noise", "noise seed", config.noiseSeed)}
@@ -104,13 +118,14 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
   function readForm(): void {
     config.channels = Number(chInput.value);
     config.fineness = Number(fnInput.value);
-    config.inject = Number(injInput.value);
+    config.inject = injectFromSlider(Number(injInput.value));
     config.networkSeed = Math.trunc(Number(netInput.value));
     config.noiseSeed = Math.trunc(Number(noiseInput.value));
     config.outputSize = Number(sizeInput.value);
     chVal.value = String(config.channels);
     fnVal.value = String(config.fineness);
-    injVal.value = config.inject.toFixed(1);
+    injVal.value = formatInject(config.inject);
+    injInput.setAttribute("aria-valuetext", injVal.value);
   }
 
   function syncUrl(): void {

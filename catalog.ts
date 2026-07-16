@@ -4,6 +4,13 @@ import { generateTexture, DEFAULT_CONFIG, type TextureConfig } from "./types";
 import { navigate, replace } from "./router";
 import { seedField, wireSteppers } from "./stepper";
 import { isFavorite, subscribe as subscribeFavorites, toggleFavorite } from "./favorites";
+import {
+  formatInject,
+  injectFromSlider,
+  INJECT_SLIDER_MAX,
+  INJECT_SLIDER_MIN,
+  sliderFromInject,
+} from "./inject";
 
 const PER_PAGE = 24; // 6 columns × 4 rows
 const THUMB_SIZE = 128;
@@ -31,7 +38,7 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
     page: Math.max(0, Math.trunc(intParam(params, "page", 0))),
     channels: intParam(params, "ch", DEFAULT_CONFIG.channels),
     fineness: intParam(params, "fn", 2),
-    inject: intParam(params, "inj", 1.0),
+    inject: injectFromSlider(sliderFromInject(intParam(params, "inj", 1.0))),
     noiseSeed: Math.trunc(intParam(params, "noise", 1234)),
   };
 
@@ -58,7 +65,7 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
         </label>
         <label>
           <span class="label-row"><span>inject</span><output id="injVal"></output></span>
-          <input id="inj" type="range" min="0" max="2" step="0.1">
+          <input id="inj" type="range" min="${INJECT_SLIDER_MIN}" max="${INJECT_SLIDER_MAX}" step="1">
         </label>
         ${seedField("noise", "noise seed", state.noiseSeed)}
       </form>
@@ -141,11 +148,12 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
   function syncControls(): void {
     chInput.value = String(state.channels);
     fnInput.value = String(state.fineness);
-    injInput.value = String(state.inject);
+    injInput.value = String(sliderFromInject(state.inject));
     noiseInput.value = String(state.noiseSeed);
     chVal.value = String(state.channels);
     fnVal.value = String(state.fineness);
-    injVal.value = state.inject.toFixed(1);
+    injVal.value = formatInject(state.inject);
+    injInput.setAttribute("aria-valuetext", injVal.value);
     pageInput.value = String(state.page + 1);
     const first = state.page * PER_PAGE;
     pagerRange.textContent = `seed ${first} – ${first + PER_PAGE - 1}`;
@@ -216,7 +224,7 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
   root.querySelector<HTMLFormElement>("#catalogControls")!.addEventListener("input", () => {
     state.channels = Number(chInput.value);
     state.fineness = Number(fnInput.value);
-    state.inject = Number(injInput.value);
+    state.inject = injectFromSlider(Number(injInput.value));
     const noise = Math.trunc(Number(noiseInput.value));
     if (Number.isFinite(noise)) state.noiseSeed = noise;
     refresh();

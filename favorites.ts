@@ -26,7 +26,7 @@ function normalizedConfig(config: TextureConfig): TextureConfig {
   return {
     channels: Math.trunc(config.channels),
     fineness: Math.trunc(config.fineness),
-    inject: Math.round(config.inject * 10) / 10,
+    inject: config.inject === 0 ? 0 : Number(config.inject.toPrecision(6)),
     networkSeed: Math.trunc(config.networkSeed),
     noiseSeed: Math.trunc(config.noiseSeed),
     outputSize: Math.trunc(config.outputSize),
@@ -45,8 +45,8 @@ function isValidConfig(value: unknown): value is TextureConfig {
     config.fineness! <= 7 &&
     typeof config.inject === "number" &&
     Number.isFinite(config.inject) &&
-    config.inject >= 0 &&
-    config.inject <= 2 &&
+    config.inject >= 0.1 &&
+    config.inject <= 20 &&
     Number.isInteger(config.networkSeed) &&
     Number.isInteger(config.noiseSeed) &&
     Number.isInteger(config.outputSize) &&
