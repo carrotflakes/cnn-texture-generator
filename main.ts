@@ -4,9 +4,12 @@ import "./styles.css";
 import { currentRoute, onRouteChange, replace, type RouteState } from "./router";
 import { mountCatalog } from "./catalog";
 import { mountEdit } from "./edit";
+import { mountFavoritesDrawer } from "./favorites-drawer";
 
 const app = document.getElementById("app")!;
 let dispose: (() => void) | null = null;
+
+mountFavoritesDrawer();
 
 function mount(state: RouteState): void {
   dispose?.();

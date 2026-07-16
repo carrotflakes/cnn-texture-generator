@@ -3,6 +3,7 @@
 import { generateTexture, DEFAULT_CONFIG, type TextureConfig } from "./types";
 import { navigate, replace } from "./router";
 import { seedField, wireSteppers } from "./stepper";
+import { isFavorite, subscribe as subscribeFavorites, toggleFavorite } from "./favorites";
 
 const PER_PAGE = 24; // 6 columns × 4 rows
 const THUMB_SIZE = 128;
@@ -89,18 +90,40 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
   const nextButton = root.querySelector<HTMLButtonElement>("#next")!;
 
   const canvases: HTMLCanvasElement[] = [];
+  const favoriteButtons: HTMLButtonElement[] = [];
   for (let i = 0; i < PER_PAGE; i++) {
-    const cell = document.createElement("button");
-    cell.type = "button";
+    const cell = document.createElement("article");
     cell.className = "cell";
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.className = "cell-open";
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = THUMB_SIZE;
     const caption = document.createElement("span");
     caption.className = "cell-caption";
-    cell.append(canvas, caption);
-    cell.addEventListener("click", () => openInEditor(state.page * PER_PAGE + i));
+    openButton.append(canvas, caption);
+    openButton.addEventListener("click", () => openInEditor(state.page * PER_PAGE + i));
+
+    const favoriteButton = document.createElement("button");
+    favoriteButton.type = "button";
+    favoriteButton.className = "cell-favorite";
+    favoriteButton.addEventListener("click", () => toggleFavorite(configForIndex(i)));
+
+    cell.append(openButton, favoriteButton);
     grid.append(cell);
     canvases.push(canvas);
+    favoriteButtons.push(favoriteButton);
+  }
+
+  function configForIndex(index: number): TextureConfig {
+    return {
+      channels: state.channels,
+      fineness: state.fineness,
+      inject: state.inject,
+      networkSeed: state.page * PER_PAGE + index,
+      noiseSeed: state.noiseSeed,
+      outputSize: THUMB_SIZE,
+    };
   }
 
   function openInEditor(seed: number): void {
@@ -139,25 +162,34 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
     });
   }
 
+  function syncFavoriteButtons(): void {
+    favoriteButtons.forEach((button, index) => {
+      const config = configForIndex(index);
+      const active = isFavorite(config);
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+      button.setAttribute(
+        "aria-label",
+        `${active ? "Remove" : "Add"} network seed ${config.networkSeed} ${active ? "from" : "to"} favorites`,
+      );
+      button.textContent = "♥";
+    });
+  }
+
   async function renderGrid(): Promise<void> {
     const gen = ++token;
     for (let i = 0; i < PER_PAGE; i++) {
       if (!alive || gen !== token) return;
       const seed = state.page * PER_PAGE + i;
-      const config: TextureConfig = {
-        channels: state.channels,
-        fineness: state.fineness,
-        inject: state.inject,
-        networkSeed: seed,
-        noiseSeed: state.noiseSeed,
-        outputSize: THUMB_SIZE,
-      };
-      const cell = canvases[i].parentElement as HTMLElement;
+      const config = configForIndex(i);
+      const cell = canvases[i].closest<HTMLElement>(".cell")!;
       const caption = cell.querySelector<HTMLElement>(".cell-caption")!;
+      const openButton = cell.querySelector<HTMLButtonElement>(".cell-open")!;
       try {
         const pixels = generateTexture(config);
         canvases[i].getContext("2d")!.putImageData(new ImageData(pixels, THUMB_SIZE, THUMB_SIZE), 0, 0);
         caption.textContent = `#${seed}`;
+        openButton.setAttribute("aria-label", `Open texture with network seed ${seed}`);
         cell.classList.remove("cell-error");
       } catch (error) {
         caption.textContent = "×";
@@ -171,6 +203,7 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
   function refresh(): void {
     syncControls();
     syncUrl();
+    syncFavoriteButtons();
     void renderGrid();
   }
 
@@ -197,9 +230,11 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
   });
 
   wireSteppers(root);
+  const unsubscribeFavorites = subscribeFavorites(syncFavoriteButtons);
   refresh();
 
   return () => {
     alive = false;
+    unsubscribeFavorites();
   };
 }

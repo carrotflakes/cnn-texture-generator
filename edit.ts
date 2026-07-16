@@ -3,6 +3,7 @@
 import { generateTexture, DEFAULT_CONFIG, type TextureConfig } from "./types";
 import { navigate, replace } from "./router";
 import { seedField, wireSteppers } from "./stepper";
+import { isFavorite, subscribe as subscribeFavorites, toggleFavorite } from "./favorites";
 
 const OUTPUT_SIZES = [64, 128, 256, 512, 1024];
 
@@ -73,6 +74,7 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
               <button class="active" id="singleMode" type="button" aria-pressed="true">Single</button>
               <button id="tiledMode" type="button" aria-pressed="false">3×3</button>
             </span>
+            <button id="favorite" type="button" aria-pressed="false">♡ Favorite</button>
             <button id="download" type="button">Save PNG</button>
           </span>
         </figcaption>
@@ -96,6 +98,7 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
   const outputLabel = root.querySelector<HTMLSpanElement>("#outputLabel")!;
   const singleModeButton = root.querySelector<HTMLButtonElement>("#singleMode")!;
   const tiledModeButton = root.querySelector<HTMLButtonElement>("#tiledMode")!;
+  const favoriteButton = root.querySelector<HTMLButtonElement>("#favorite")!;
   const downloadButton = root.querySelector<HTMLButtonElement>("#download")!;
 
   function readForm(): void {
@@ -120,6 +123,13 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
       size: config.outputSize,
       from: fromPage,
     });
+  }
+
+  function syncFavoriteButton(): void {
+    const active = isFavorite(config);
+    favoriteButton.classList.toggle("active", active);
+    favoriteButton.setAttribute("aria-pressed", String(active));
+    favoriteButton.textContent = active ? "♥ Favorited" : "♡ Favorite";
   }
 
   function updateTiledPreview(size: number): void {
@@ -169,12 +179,14 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
   form.addEventListener("input", () => {
     readForm();
     syncUrl();
+    syncFavoriteButton();
     window.clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(() => void generate(), 180);
   });
 
   singleModeButton.addEventListener("click", () => setPreviewMode("single"));
   tiledModeButton.addEventListener("click", () => setPreviewMode("tiled"));
+  favoriteButton.addEventListener("click", () => toggleFavorite(config));
 
   downloadButton.addEventListener("click", () => {
     const link = document.createElement("a");
@@ -194,12 +206,15 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
   });
 
   wireSteppers(root);
+  const unsubscribeFavorites = subscribeFavorites(syncFavoriteButton);
   readForm();
+  syncFavoriteButton();
   setPreviewMode(previewMode);
   void generate();
 
   return () => {
     alive = false;
     window.clearTimeout(debounceTimer);
+    unsubscribeFavorites();
   };
 }
