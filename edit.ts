@@ -54,6 +54,7 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
           <span class="label-row"><span>channels</span><output id="chVal"></output></span>
           <input id="ch" type="range" min="1" max="6" step="1" value="${config.channels}">
         </label>
+        ${seedField("net", "network seed", config.networkSeed)}
         <label>
           <span class="label-row"><span>fineness</span><output id="fnVal"></output></span>
           <input id="fn" type="range" min="1" max="7" step="1" value="${config.fineness}">
@@ -69,12 +70,11 @@ export function mountEdit(root: HTMLElement, params: URLSearchParams): () => voi
             value="${sliderFromInject(config.inject)}"
           >
         </label>
-        ${seedField("net", "network seed", config.networkSeed)}
-        ${seedField("noise", "noise seed", config.noiseSeed)}
         <label>
           output_size
           <select id="size">${sizeOptions}</select>
         </label>
+        ${seedField("noise", "noise seed", config.noiseSeed)}
       </form>
 
       <p class="status" id="status" aria-live="polite"></p>
