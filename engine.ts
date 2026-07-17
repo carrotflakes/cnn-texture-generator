@@ -23,6 +23,7 @@ export interface GenomeConfig {
 
 export interface Genome {
   channels: number;
+  leakyReluSlope: number;
   inject: number;
   noiseSeed: number;
   layers: Layer[];
@@ -122,12 +123,12 @@ function upscale2x(src: Float32Array, size: number): Float32Array {
   return output;
 }
 
-function normalizeAndActivate(features: Float32Array[]): void {
+function normalizeAndActivate(features: Float32Array[], slope: number): void {
   let sum = 0;
   let count = 0;
   for (const channel of features) {
     for (let i = 0; i < channel.length; i++) {
-      channel[i] = channel[i] > 0 ? channel[i] : channel[i] * 0.2;
+      channel[i] = channel[i] > 0 ? channel[i] : channel[i] * slope;
       sum += channel[i];
       count++;
     }
@@ -167,6 +168,7 @@ export function makeGenome(config: GenomeConfig, rng: Rng, noiseSeed: number): G
   });
   return {
     channels: config.channels,
+    leakyReluSlope: rng.next() ** 2,
     inject: config.inject,
     noiseSeed,
     layers,
@@ -218,7 +220,7 @@ export function render(genome: Genome, outputSize: number): Uint8ClampedArray<Ar
       for (let i = 0; i < channel.length; i++) channel[i] += strength * rng.gauss();
     }
     features = convApply(features, size, layer, genome.channels);
-    normalizeAndActivate(features);
+    normalizeAndActivate(features, genome.leakyReluSlope);
   }
 
   return toPixels(convApply(features, size, genome.outputLayer, 3), size);
