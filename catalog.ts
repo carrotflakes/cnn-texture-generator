@@ -39,7 +39,7 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
     channels: intParam(params, "ch", DEFAULT_CONFIG.channels),
     fineness: intParam(params, "fn", 2),
     inject: injectFromSlider(sliderFromInject(intParam(params, "inj", 1.0))),
-    noiseSeed: Math.trunc(intParam(params, "noise", 1234)),
+    noiseSeed: Math.trunc(intParam(params, "noise", DEFAULT_CONFIG.noiseSeed)),
   };
 
   let alive = true;

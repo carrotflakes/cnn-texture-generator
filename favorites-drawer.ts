@@ -11,7 +11,7 @@ import {
 import { navigate } from "./router";
 
 const PREVIEW_SIZE = 128;
-const CATALOG_PER_PAGE = 24;
+const CATALOG_PER_PAGE = 12;
 
 function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));

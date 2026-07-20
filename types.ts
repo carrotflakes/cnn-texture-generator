@@ -15,8 +15,8 @@ export const DEFAULT_CONFIG: TextureConfig = {
   channels: 2,
   fineness: 2,
   inject: 1.0,
-  networkSeed: 42,
-  noiseSeed: 1234,
+  networkSeed: 0,
+  noiseSeed: 0,
   outputSize: 128,
 };
 
