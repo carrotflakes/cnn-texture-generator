@@ -51,12 +51,13 @@ h1 {
 /* ---- View layout: sidebar controls + main content ---- */
 .catalog {
   display: grid;
-  grid-template-columns: 288px minmax(0, 1fr);
+  grid-template-columns: 220px minmax(0, 1fr);
   grid-template-areas:
     "head head"
     "side pager"
-    "side grid";
-  gap: 0 30px;
+    "side grid"
+    "side pager-bottom";
+  gap: 0 24px;
   align-items: start;
 }
 .edit {
@@ -79,6 +80,7 @@ h1 {
   max-width: none;
 }
 .pager { grid-area: pager; }
+.pager-bottom { grid-area: pager-bottom; }
 .grid { grid-area: grid; }
 .status { grid-area: status; }
 .result { grid-area: result; }
@@ -86,7 +88,7 @@ h1 {
 @media (max-width: 820px) {
   .catalog {
     grid-template-columns: 1fr;
-    grid-template-areas: "head" "side" "pager" "grid";
+    grid-template-areas: "head" "side" "pager" "grid" "pager-bottom";
   }
   .edit {
     grid-template-columns: 1fr;
@@ -111,7 +113,21 @@ h1 {
   background: linear-gradient(180deg, var(--surface-2), var(--surface-1));
   box-shadow: var(--shadow-2), inset 0 1px 0 rgb(255 255 255 / 4%);
 }
-.catalog-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 440px; }
+.catalog-controls {
+  grid-template-columns: 1fr;
+  max-width: 440px;
+  gap: 11px;
+  padding: 14px;
+}
+.catalog-controls label { gap: 4px; font-size: 11px; }
+.catalog-controls input { min-height: 34px; padding: 6px 8px; }
+.catalog-controls input[type="range"] { min-height: 24px; }
+.catalog-controls .stepper { gap: 4px; }
+.catalog-controls .step-btn {
+  min-width: 30px;
+  min-height: 34px;
+  font-size: 15px;
+}
 
 /* Seed −/+ stepper */
 .stepper { display: flex; gap: 6px; align-items: stretch; }
@@ -198,15 +214,16 @@ button:disabled { cursor: not-allowed; filter: grayscale(1); opacity: .45; }
 .pager-info { color: var(--text-dim); font-size: 13px; display: flex; align-items: center; gap: 8px; }
 .page-input { width: 80px; min-height: 36px; text-align: center; }
 .pager-range { color: var(--text-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+.pager-bottom { margin: 18px 0 0; }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
 }
 .cell {
   position: relative;
-  padding: 7px;
+  padding: 8px;
   min-height: 0;
   border-radius: var(--radius-sm);
   background: var(--surface-1);
@@ -530,6 +547,7 @@ figcaption button:hover:not(:disabled) { color: var(--text); transform: none; }
   #app { width: calc(100% - 24px); margin: 32px auto; }
   .controls { grid-template-columns: repeat(2, 1fr); }
   .catalog-controls { grid-template-columns: repeat(2, 1fr); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   body.favorites-open { padding-bottom: 288px; }
   .favorites-drawer { width: calc(100% - 20px); }
   .favorites-panel { min-height: 214px; padding-right: 12px; padding-left: 12px; }

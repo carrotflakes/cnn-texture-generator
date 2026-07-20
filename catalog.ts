@@ -12,8 +12,8 @@ import {
   sliderFromInject,
 } from "./inject";
 
-const PER_PAGE = 24; // 6 columns × 4 rows
-const THUMB_SIZE = 128;
+const PER_PAGE = 12;
+const THUMB_SIZE = 192;
 
 function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
@@ -71,15 +71,24 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
       </form>
 
       <nav class="pager">
-        <button type="button" id="prev">◀ Previous</button>
+        <button type="button" data-page-action="prev">◀ Previous</button>
         <span class="pager-info">
-          Page <input id="pageInput" type="number" min="1" step="1" class="page-input">
+          Page <input type="number" min="1" step="1" class="page-input">
         </span>
-        <button type="button" id="next">Next ▶</button>
-        <span class="pager-range" id="pagerRange"></span>
+        <button type="button" data-page-action="next">Next ▶</button>
+        <span class="pager-range"></span>
       </nav>
 
       <div class="grid" id="grid"></div>
+
+      <nav class="pager pager-bottom">
+        <button type="button" data-page-action="prev">◀ Previous</button>
+        <span class="pager-info">
+          Page <input type="number" min="1" step="1" class="page-input">
+        </span>
+        <button type="button" data-page-action="next">Next ▶</button>
+        <span class="pager-range"></span>
+      </nav>
     </div>
   `;
 
@@ -90,11 +99,11 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
   const chVal = root.querySelector<HTMLOutputElement>("#chVal")!;
   const fnVal = root.querySelector<HTMLOutputElement>("#fnVal")!;
   const injVal = root.querySelector<HTMLOutputElement>("#injVal")!;
-  const pageInput = root.querySelector<HTMLInputElement>("#pageInput")!;
-  const pagerRange = root.querySelector<HTMLSpanElement>("#pagerRange")!;
+  const pageInputs = Array.from(root.querySelectorAll<HTMLInputElement>(".page-input"));
+  const pagerRanges = Array.from(root.querySelectorAll<HTMLSpanElement>(".pager-range"));
   const grid = root.querySelector<HTMLDivElement>("#grid")!;
-  const prevButton = root.querySelector<HTMLButtonElement>("#prev")!;
-  const nextButton = root.querySelector<HTMLButtonElement>("#next")!;
+  const prevButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-page-action="prev"]'));
+  const nextButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-page-action="next"]'));
 
   const canvases: HTMLCanvasElement[] = [];
   const favoriteButtons: HTMLButtonElement[] = [];
@@ -154,10 +163,16 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
     fnVal.value = String(state.fineness);
     injVal.value = formatInject(state.inject);
     injInput.setAttribute("aria-valuetext", injVal.value);
-    pageInput.value = String(state.page + 1);
+    pageInputs.forEach((input) => {
+      input.value = String(state.page + 1);
+    });
     const first = state.page * PER_PAGE;
-    pagerRange.textContent = `seed ${first} – ${first + PER_PAGE - 1}`;
-    prevButton.disabled = state.page === 0;
+    pagerRanges.forEach((range) => {
+      range.textContent = `seed ${first} – ${first + PER_PAGE - 1}`;
+    });
+    prevButtons.forEach((button) => {
+      button.disabled = state.page === 0;
+    });
   }
 
   function syncUrl(): void {
@@ -218,7 +233,6 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
   function goToPage(page: number): void {
     state.page = Math.max(0, Math.trunc(page));
     refresh();
-    grid.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   root.querySelector<HTMLFormElement>("#catalogControls")!.addEventListener("input", () => {
@@ -230,11 +244,24 @@ export function mountCatalog(root: HTMLElement, params: URLSearchParams): () => 
     refresh();
   });
 
-  prevButton.addEventListener("click", () => goToPage(state.page - 1));
-  nextButton.addEventListener("click", () => goToPage(state.page + 1));
-  pageInput.addEventListener("change", () => {
-    const page = Number(pageInput.value) - 1;
-    if (Number.isFinite(page)) goToPage(page);
+  prevButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      goToPage(state.page - 1);
+      button.blur();
+    });
+  });
+  nextButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      goToPage(state.page + 1);
+      button.blur();
+    });
+  });
+  pageInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      const page = Number(input.value) - 1;
+      if (Number.isFinite(page)) goToPage(page);
+      input.blur();
+    });
   });
 
   wireSteppers(root);
