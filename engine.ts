@@ -20,21 +20,19 @@ export interface DenseLayer {
   bias: Float32Array;
 }
 
-export interface GenomeConfig {
-  channels: number;
-  nSteps: number;
-  inject: number;
-}
-
 export interface Genome {
   channels: number;
   leakyReluSlope: number;
-  inject: number;
-  noiseSeed: number;
-  nSteps: number;
   firstLayer: Layer;
   lastLayer: Layer;
   outputLayer: DenseLayer;
+}
+
+export interface RenderParams {
+  fineness: number;
+  inject: number;
+  outputSize: number;
+  noiseSeed: number;
 }
 
 export function makeRng(seed: number): Rng {
@@ -189,16 +187,13 @@ function denseApply(
   return output;
 }
 
-export function makeGenome(config: GenomeConfig, rng: Rng, noiseSeed: number): Genome {
+export function makeGenome(channels: number, rng: Rng): Genome {
   return {
-    channels: config.channels,
+    channels: channels,
     leakyReluSlope: rng.next() ** 2,
-    firstLayer: makeLayer(config.channels, config.channels, rng),
-    lastLayer: makeLayer(config.channels, config.channels, rng),
-    outputLayer: makeDenseLayer(3, config.channels, rng),
-    inject: config.inject,
-    nSteps: config.nSteps,
-    noiseSeed,
+    firstLayer: makeLayer(channels, channels, rng),
+    lastLayer: makeLayer(channels, channels, rng),
+    outputLayer: makeDenseLayer(3, channels, rng),
   };
 }
 
@@ -238,13 +233,14 @@ function toPixels(rgb: Float32Array[], size: number): Uint8ClampedArray<ArrayBuf
   return pixels;
 }
 
-export function render(genome: Genome, outputSize: number): Uint8ClampedArray<ArrayBuffer> {
-  const layers = interpolateLayers(genome.firstLayer, genome.lastLayer, genome.nSteps);
+export function render(genome: Genome, params: RenderParams): Uint8ClampedArray<ArrayBuffer> {
+  const nSteps = Math.max(1, Math.log2(params.outputSize) - params.fineness);
+  const layers = interpolateLayers(genome.firstLayer, genome.lastLayer, nSteps);
   const scale = 2 ** layers.length;
-  const startSize = outputSize / scale;
+  const startSize = params.outputSize / scale;
   if (!Number.isInteger(startSize)) throw new Error(`Output size must be a multiple of ${scale}`);
 
-  const rng = makeRng(genome.noiseSeed);
+  const rng = makeRng(params.noiseSeed);
   let size = startSize;
   let features: Float32Array[] = Array.from({ length: genome.channels }, () => {
     const channel = new Float32Array(size * size);
@@ -255,7 +251,7 @@ export function render(genome: Genome, outputSize: number): Uint8ClampedArray<Ar
   for (const layer of layers) {
     features = features.map((channel) => upscale2x(channel, size));
     size *= 2;
-    const strength = genome.inject * (startSize / size);
+    const strength = params.inject * (startSize / size);
     for (const channel of features) {
       for (let i = 0; i < channel.length; i++) channel[i] += strength * rng.gauss();
     }
