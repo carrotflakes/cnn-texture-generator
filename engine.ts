@@ -15,6 +15,11 @@ export interface Layer {
   bias: Float32Array;
 }
 
+export interface DenseLayer {
+  weights: Float32Array;
+  bias: Float32Array;
+}
+
 export interface GenomeConfig {
   channels: number;
   nSteps: number;
@@ -26,8 +31,10 @@ export interface Genome {
   leakyReluSlope: number;
   inject: number;
   noiseSeed: number;
-  layers: Layer[];
-  outputLayer: Layer;
+  nSteps: number;
+  firstLayer: Layer;
+  lastLayer: Layer;
+  outputLayer: DenseLayer;
 }
 
 export function makeRng(seed: number): Rng {
@@ -153,27 +160,59 @@ function makeLayer(outputChannels: number, inputChannels: number, rng: Rng): Lay
   return { weights, bias };
 }
 
+function makeDenseLayer(outputChannels: number, inputChannels: number, rng: Rng): DenseLayer {
+  const weights = new Float32Array(outputChannels * inputChannels);
+  const scale = Math.sqrt(2 / inputChannels);
+  for (let i = 0; i < weights.length; i++) weights[i] = rng.gauss() * scale;
+  const bias = new Float32Array(outputChannels);
+  for (let i = 0; i < bias.length; i++) bias[i] = rng.gauss() * 0.1;
+  return { weights, bias };
+}
+
+function denseApply(
+  features: Float32Array[],
+  layer: DenseLayer,
+  outputChannels: number,
+): Float32Array[] {
+  const inputChannels = features.length;
+  const length = features[0]?.length ?? 0;
+  const output: Float32Array[] = [];
+  for (let outChannel = 0; outChannel < outputChannels; outChannel++) {
+    const values = new Float32Array(length).fill(layer.bias[outChannel]);
+    for (let inChannel = 0; inChannel < inputChannels; inChannel++) {
+      const weight = layer.weights[outChannel * inputChannels + inChannel];
+      const input = features[inChannel];
+      for (let i = 0; i < length; i++) values[i] += weight * input[i];
+    }
+    output.push(values);
+  }
+  return output;
+}
+
 export function makeGenome(config: GenomeConfig, rng: Rng, noiseSeed: number): Genome {
-  const first = makeLayer(config.channels, config.channels, rng);
-  const last = makeLayer(config.channels, config.channels, rng);
-  const layers = Array.from({ length: config.nSteps }, (_, index): Layer => {
+  return {
+    channels: config.channels,
+    leakyReluSlope: rng.next() ** 2,
+    firstLayer: makeLayer(config.channels, config.channels, rng),
+    lastLayer: makeLayer(config.channels, config.channels, rng),
+    outputLayer: makeDenseLayer(3, config.channels, rng),
+    inject: config.inject,
+    nSteps: config.nSteps,
+    noiseSeed,
+  };
+}
+
+function interpolateLayers(first: Layer, last: Layer, nSteps: number): Layer[] {
+  return Array.from({ length: nSteps }, (_, index): Layer => {
     if (index === 0) return first;
-    if (index === config.nSteps - 1) return last;
-    const ratio = index / (config.nSteps - 1);
+    if (index === nSteps - 1) return last;
+    const ratio = index / (nSteps - 1);
     const weights = new Float32Array(first.weights.length);
     const bias = new Float32Array(first.bias.length);
     for (let i = 0; i < weights.length; i++) weights[i] = first.weights[i] * (1 - ratio) + last.weights[i] * ratio;
     for (let i = 0; i < bias.length; i++) bias[i] = first.bias[i] * (1 - ratio) + last.bias[i] * ratio;
     return { weights, bias };
   });
-  return {
-    channels: config.channels,
-    leakyReluSlope: rng.next() ** 2,
-    inject: config.inject,
-    noiseSeed,
-    layers,
-    outputLayer: makeLayer(3, config.channels, rng),
-  };
 }
 
 function toPixels(rgb: Float32Array[], size: number): Uint8ClampedArray<ArrayBuffer> {
@@ -200,7 +239,8 @@ function toPixels(rgb: Float32Array[], size: number): Uint8ClampedArray<ArrayBuf
 }
 
 export function render(genome: Genome, outputSize: number): Uint8ClampedArray<ArrayBuffer> {
-  const scale = 2 ** genome.layers.length;
+  const layers = interpolateLayers(genome.firstLayer, genome.lastLayer, genome.nSteps);
+  const scale = 2 ** layers.length;
   const startSize = outputSize / scale;
   if (!Number.isInteger(startSize)) throw new Error(`Output size must be a multiple of ${scale}`);
 
@@ -212,7 +252,7 @@ export function render(genome: Genome, outputSize: number): Uint8ClampedArray<Ar
     return channel;
   });
 
-  for (const layer of genome.layers) {
+  for (const layer of layers) {
     features = features.map((channel) => upscale2x(channel, size));
     size *= 2;
     const strength = genome.inject * (startSize / size);
@@ -223,5 +263,5 @@ export function render(genome: Genome, outputSize: number): Uint8ClampedArray<Ar
     normalizeAndActivate(features, genome.leakyReluSlope);
   }
 
-  return toPixels(convApply(features, size, genome.outputLayer, 3), size);
+  return toPixels(denseApply(features, genome.outputLayer, 3), size);
 }
