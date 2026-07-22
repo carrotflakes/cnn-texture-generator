@@ -22,7 +22,7 @@ export interface DenseLayer {
 
 export interface Genome {
   channels: number;
-  leakyReluSlope: number;
+  leakyReluSlope: [number, number];
   firstLayer: Layer;
   lastLayer: Layer;
   outputLayer: DenseLayer;
@@ -190,7 +190,7 @@ function denseApply(
 export function makeGenome(channels: number, rng: Rng): Genome {
   return {
     channels: channels,
-    leakyReluSlope: rng.next() ** 2,
+    leakyReluSlope: [rng.next() ** 2, rng.next() ** 2],
     firstLayer: makeLayer(channels, channels, rng),
     lastLayer: makeLayer(channels, channels, rng),
     outputLayer: makeDenseLayer(3, channels, rng),
@@ -256,7 +256,8 @@ export function render(genome: Genome, params: RenderParams): Uint8ClampedArray<
       for (let i = 0; i < channel.length; i++) channel[i] += strength * rng.gauss();
     }
     features = convApply(features, size, layer, genome.channels);
-    normalizeAndActivate(features, genome.leakyReluSlope);
+    const leakySlope = genome.leakyReluSlope[0] + (genome.leakyReluSlope[1] - genome.leakyReluSlope[0]) * (size / params.outputSize);
+    normalizeAndActivate(features, leakySlope);
   }
 
   return toPixels(denseApply(features, genome.outputLayer, 3), size);
