@@ -12,7 +12,7 @@ import {
   sliderFromInject,
 } from "./inject";
 
-const OUTPUT_SIZES = [64, 128, 256, 512, 1024];
+const OUTPUT_SIZES = [64, 128, 256, 512, 1024, 2048];
 
 function nextFrame(): Promise<void> {
   return new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
